@@ -1,114 +1,208 @@
-import Image from "next/image";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Modal } from "@/components/Modal";
+import { IPaginatedRecords, Task } from "@/utils/types";
+import { ChevronDownIcon, ChevronUpIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { useQuery } from "@tanstack/react-query";
+import { format } from "date-fns";
+import { GetServerSideProps } from "next";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { toast } from "react-toastify";
+import { deleteTask, getTasks } from "../utils/api";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+interface HomeProps {
+  initialTasks: IPaginatedRecords<Task>;
+}
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+export default function Home({ initialTasks }: HomeProps) {
+  const [page, setPage] = useState(1);
+  const [sortField, setSortField] = useState<keyof Task>("createdAt");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
+  const { data, refetch } = useQuery({
+    queryKey: ["tasks", page, sortField, sortDirection, debouncedSearchTerm, statusFilter],
+    queryFn: () => getTasks({ limit: 10, page: page, search: debouncedSearchTerm, sort: sortDirection, sortBy: sortField, status: statusFilter }),
+    initialData: initialTasks,
+  });
 
-export default function Home() {
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      const trimmedTerm = searchTerm.trim();
+      if (trimmedTerm) {
+        setDebouncedSearchTerm(trimmedTerm);
+      } else {
+        setDebouncedSearchTerm("");
+      }
+    }, 500);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchTerm]);
+
+  const sortTasks = (field: keyof Task) => {
+    if (field === sortField) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  const openDeleteModal = async (id: string) => {
+    setTaskToDelete(id);
+    setDeleteModalOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (taskToDelete) {
+      try {
+        await deleteTask(taskToDelete);
+        refetch();
+        toast.success("The task has been successfully deleted.");
+      } catch (error) {
+        toast.error("Failed to delete the task. Please try again.");
+      }
+    }
+    setDeleteModalOpen(false);
+    setTaskToDelete(null);
+  };
+
   return (
-    <div
-      className={`${geistSans.variable} ${geistMono.variable} grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]`}
-    >
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/pages/index.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <>
+      <div className="mb-4 flex justify-between items-center">
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="p-2 border rounded outline-none cursor-pointer text-[10px] md:text-base">
+          <option value="">All Statuses</option>
+          <option value="PENDING">Pending</option>
+          <option value="IN_PROGRESS">In Progress</option>
+          <option value="COMPLETED">Completed</option>
+        </select>
+        <div className="flex items-center space-x-4">
+          <input
+            type="text"
+            placeholder="Search tasks..."
+            className="p-2 border rounded outline-none text-[10px] md:text-base w-[100px] md:w-64"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <Link href="/tasks/create" className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded text-[10px] md:text-base">
+            Create Task
+          </Link>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+      </div>
+      <div className="overflow-x-auto overflow-y-hidden bg-white shadow-md rounded-lg">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+              >
+                Title
+                {sortField === "title" &&
+                  (sortDirection === "asc" ? <ChevronUpIcon className="w-4 h-4 inline ml-1" /> : <ChevronDownIcon className="w-4 h-4 inline ml-1" />)}
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+              >
+                Description
+                {sortField === "description" &&
+                  (sortDirection === "asc" ? <ChevronUpIcon className="w-4 h-4 inline ml-1" /> : <ChevronDownIcon className="w-4 h-4 inline ml-1" />)}
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+              >
+                Status
+                {sortField === "status" &&
+                  (sortDirection === "asc" ? <ChevronUpIcon className="w-4 h-4 inline ml-1" /> : <ChevronDownIcon className="w-4 h-4 inline ml-1" />)}
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                onClick={() => sortTasks("dueDate")}
+              >
+                Due Date
+                {sortField === "dueDate" &&
+                  (sortDirection === "asc" ? <ChevronUpIcon className="w-4 h-4 inline ml-1" /> : <ChevronDownIcon className="w-4 h-4 inline ml-1" />)}
+              </th>
+              <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {data.data.map((task) => (
+              <tr key={task._id} className="hover:bg-gray-50">
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm font-medium text-gray-900">{task.title}</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-500">{task.description}</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span
+                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                      task.status === "COMPLETED"
+                        ? "bg-green-100 text-green-800"
+                        : task.status === "IN_PROGRESS"
+                        ? "bg-yellow-100 text-yellow-800"
+                        : "bg-red-100 text-red-800"
+                    }`}
+                  >
+                    {task.status.toLocaleUpperCase()}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{format(task.dueDate, "MM/dd/yyyy")}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                  <Link href={`/tasks/${task._id}/edit`} className="text-indigo-600 hover:text-indigo-900 mr-4">
+                    <PencilIcon className="w-5 h-5 inline" />
+                  </Link>
+                  <button onClick={() => openDeleteModal(task._id)} className="text-red-600 hover:text-red-900">
+                    <TrashIcon className="w-5 h-5 inline" />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="mt-4 flex justify-center">
+        {Array.from({ length: Math.ceil(data.totalPages) }, (_, i) => (
+          <button
+            key={i}
+            onClick={() => setPage(i + 1)}
+            className={`mx-1 px-3 py-1 rounded ${page === i + 1 ? "bg-indigo-600 hover:bg-indigo-700 text-white" : "bg-gray-200"}`}
+          >
+            {i + 1}
+          </button>
+        ))}
+      </div>
+
+      <Modal isOpen={deleteModalOpen} onClose={() => setDeleteModalOpen(false)} title="Delete Task">
+        <p>Are you sure you want to delete this task?</p>
+        <div className="mt-4 flex justify-end space-x-2">
+          <button onClick={() => setDeleteModalOpen(false)} className="px-4 py-2 border rounded text-gray-600 hover:bg-gray-100">
+            Cancel
+          </button>
+          <button onClick={handleDelete} className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">
+            Delete
+          </button>
+        </div>
+      </Modal>
+    </>
   );
 }
+
+export const getServerSideProps: GetServerSideProps = async () => {
+  const tasks = await getTasks({ limit: 10, page: 1, search: "", sort: "desc", sortBy: "createdAt", status: "" });
+  return {
+    props: {
+      initialTasks: tasks,
+    },
+  };
+};
