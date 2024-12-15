@@ -83,7 +83,7 @@ export default function TaskForm({ initialData }: { initialData?: Task }) {
           <select
             {...register("status", { required: "Status is required" })}
             id="status"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none text-black"
           >
             <option value={TaskStatus.PENDING}>Pending</option>
             <option value={TaskStatus.IN_PROGRESS}>In Progress</option>
@@ -100,7 +100,7 @@ export default function TaskForm({ initialData }: { initialData?: Task }) {
             {...register("dueDate", { required: "Due date is required" })}
             id="dueDate"
             type="date"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none text-blac"
           />
           {errors.dueDate && <p className="text-red-500 text-sm mt-1">{errors?.dueDate?.message as string}</p>}
         </div>

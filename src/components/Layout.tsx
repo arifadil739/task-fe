@@ -20,7 +20,7 @@ export default function Layout({ children, title = 'Task Management' }: LayoutPr
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex">
-              <Link href="/" className="flex-shrink-0 flex items-center cursor-pointer">
+              <Link href="/" className="flex-shrink-0 flex items-center cursor-pointer text-black">
                 Task Manager
               </Link>
               <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
