@@ -100,7 +100,7 @@ export default function TaskForm({ initialData }: { initialData?: Task }) {
             {...register("dueDate", { required: "Due date is required" })}
             id="dueDate"
             type="date"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none text-blac"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none text-black"
           />
           {errors.dueDate && <p className="text-red-500 text-sm mt-1">{errors?.dueDate?.message as string}</p>}
         </div>

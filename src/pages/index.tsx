@@ -85,7 +85,7 @@ export default function Home({ initialTasks }: HomeProps) {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="p-2 border rounded outline-none cursor-pointer text-[10px] md:text-base"
+          className="p-2 border rounded outline-none cursor-pointer text-[10px] md:text-base text-black"
         >
           <option value="">All Statuses</option>
           <option value="PENDING">Pending</option>

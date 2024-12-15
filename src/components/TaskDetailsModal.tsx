@@ -13,7 +13,7 @@ export function TaskDetailsModal({ isOpen, onClose, task }: TaskDetailsModalProp
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Task Details">
-      <div className="space-y-4">
+      <div className="space-y-4 text-black">
         <div>
           <h3 className="text-lg font-medium">Title</h3>
           <p>{task.title}</p>
