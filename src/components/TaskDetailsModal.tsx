@@ -28,15 +28,15 @@ export function TaskDetailsModal({ isOpen, onClose, task }: TaskDetailsModalProp
         </div>
         <div>
           <h3 className="text-lg font-medium">Due Date</h3>
-          <p>{format(new Date(task.dueDate), "MM/dd/yyyy")}</p>
+          <p>{format(task.dueDate, "MM/dd/yyyy")}</p>
         </div>
         <div>
           <h3 className="text-lg font-medium">Created At</h3>
-          <p>{format(new Date(task.createdAt), "MM/dd/yyyy HH:mm:ss")}</p>
+          <p>{format(task.createdAt, "MM/dd/yyyy HH:mm:ss")}</p>
         </div>
         <div>
           <h3 className="text-lg font-medium">Updated At</h3>
-          <p>{format(new Date(task.updatedAt), "MM/dd/yyyy HH:mm:ss")}</p>
+          <p>{format(task.updatedAt, "MM/dd/yyyy HH:mm:ss")}</p>
         </div>
       </div>
       <div className="mt-6 flex justify-end">
