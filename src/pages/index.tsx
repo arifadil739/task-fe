@@ -1,6 +1,6 @@
 import { Modal } from "@/components/Modal";
 import { IPaginatedRecords, Task } from "@/utils/types";
-import { ChevronDownIcon, ChevronUpIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { ChevronDownIcon, ChevronUpIcon, PencilIcon, TrashIcon, EyeIcon } from "@heroicons/react/24/outline";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { GetServerSideProps } from "next";
@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { deleteTask, getTasks } from "../utils/api";
+import { TaskDetailsModal } from "@/components/TaskDetailsModal";
 
 interface HomeProps {
   initialTasks: IPaginatedRecords<Task>;
@@ -22,6 +23,8 @@ export default function Home({ initialTasks }: HomeProps) {
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [taskDetailsModalOpen, setTaskDetailsModalOpen] = useState(false);
   const { data, refetch } = useQuery({
     queryKey: ["tasks", page, sortField, sortDirection, debouncedSearchTerm, statusFilter],
     queryFn: () => getTasks({ limit: 10, page: page, search: debouncedSearchTerm, sort: sortDirection, sortBy: sortField, status: statusFilter }),
@@ -71,10 +74,19 @@ export default function Home({ initialTasks }: HomeProps) {
     setTaskToDelete(null);
   };
 
+  const openTaskDetailsModal = (task: Task) => {
+    setSelectedTask(task);
+    setTaskDetailsModalOpen(true);
+  };
+
   return (
     <>
       <div className="mb-4 flex justify-between items-center">
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="p-2 border rounded outline-none cursor-pointer text-[10px] md:text-base">
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="p-2 border rounded outline-none cursor-pointer text-[10px] md:text-base"
+        >
           <option value="">All Statuses</option>
           <option value="PENDING">Pending</option>
           <option value="IN_PROGRESS">In Progress</option>
@@ -97,29 +109,14 @@ export default function Home({ initialTasks }: HomeProps) {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-              >
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer">
                 Title
-                {sortField === "title" &&
-                  (sortDirection === "asc" ? <ChevronUpIcon className="w-4 h-4 inline ml-1" /> : <ChevronDownIcon className="w-4 h-4 inline ml-1" />)}
               </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-              >
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer">
                 Description
-                {sortField === "description" &&
-                  (sortDirection === "asc" ? <ChevronUpIcon className="w-4 h-4 inline ml-1" /> : <ChevronDownIcon className="w-4 h-4 inline ml-1" />)}
               </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-              >
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer">
                 Status
-                {sortField === "status" &&
-                  (sortDirection === "asc" ? <ChevronUpIcon className="w-4 h-4 inline ml-1" /> : <ChevronDownIcon className="w-4 h-4 inline ml-1" />)}
               </th>
               <th
                 scope="col"
@@ -139,7 +136,9 @@ export default function Home({ initialTasks }: HomeProps) {
             {data.data.map((task) => (
               <tr key={task._id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">{task.title}</div>
+                  <div className="text-sm font-medium text-gray-900">
+                    {task.title}
+                  </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-500">{task.description}</div>
@@ -159,6 +158,9 @@ export default function Home({ initialTasks }: HomeProps) {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{format(task.dueDate, "MM/dd/yyyy")}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                  <button onClick={() => openTaskDetailsModal(task)} className="text-indigo-600 hover:text-indigo-900 mr-4">
+                    <EyeIcon className="w-5 h-5 inline" />
+                  </button>
                   <Link href={`/tasks/${task._id}/edit`} className="text-indigo-600 hover:text-indigo-900 mr-4">
                     <PencilIcon className="w-5 h-5 inline" />
                   </Link>
@@ -194,6 +196,7 @@ export default function Home({ initialTasks }: HomeProps) {
           </button>
         </div>
       </Modal>
+      <TaskDetailsModal isOpen={taskDetailsModalOpen} onClose={() => setTaskDetailsModalOpen(false)} task={selectedTask} />
     </>
   );
 }
