@@ -6,7 +6,6 @@ const api = axios.create({
 });
 
 export const getTasks = async ({ search = "", sort = "", page = 1, limit = 10, sortBy = "", status = "" }) => {
-  console.log(process.env.NEXT_PUBLIC_API_URL, "process.env.NEXT_PUBLIC_API_URL")
   const { data } = await api.get("/task", { params: { search, sort, page, limit, sortBy, status } });
   return data as IPaginatedRecords<Task>;
 };
